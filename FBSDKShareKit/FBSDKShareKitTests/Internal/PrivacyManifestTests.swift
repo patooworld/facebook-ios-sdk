@@ -11,9 +11,20 @@
 import XCTest
 
 final class PrivacyManifestTests: XCTestCase {
-  func testTrackingDomains() {
+  var manifestUrl: URL?
+
+  override func setUp() {
+    super.setUp()
     let bundle = Bundle(for: Hashtag.self)
-    let manifestUrl = bundle.url(forResource: "PrivacyInfo", withExtension: "xcprivacy")
+    manifestUrl = bundle.url(forResource: "PrivacyInfo", withExtension: "xcprivacy")
+  }
+
+  override func tearDown() {
+    manifestUrl = nil
+    super.tearDown()
+  }
+
+  func testTrackingDomains() {
     guard let manifestUrl else {
       return XCTFail("Could not find Privacy Manifest file")
     }
@@ -23,5 +34,25 @@ final class PrivacyManifestTests: XCTestCase {
     }
     XCTAssertTrue(trackingDomains.count == 1)
     XCTAssertTrue(trackingDomains.contains("ep1.facebook.com"))
+  }
+
+  func testRequiredReasonAPIs() {
+    guard let manifestUrl else {
+      return XCTFail("Could not find Privacy Manifest file")
+    }
+    if NSDictionary(contentsOf: manifestUrl)?["NSPrivacyAccessedAPITypes"] != nil {
+      return XCTFail("Should not contain Privacy Accessed API Types")
+    }
+  }
+
+  func testPrivacyTracking() {
+    guard let manifestUrl else {
+      return XCTFail("Could not find Privacy Manifest file")
+    }
+    let manifest = NSDictionary(contentsOf: manifestUrl)
+    guard let privacyTrackingFlag = manifest?["NSPrivacyTracking"] as? Bool else {
+      return XCTFail("Could not find NSPrivacyTracking key")
+    }
+    XCTAssertTrue(privacyTrackingFlag, "NSPrivacyTracking is expected to be true in the Privacy Manifest file")
   }
 }
